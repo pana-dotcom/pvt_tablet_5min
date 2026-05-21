@@ -38,12 +38,13 @@ button{
 <p id="result"></p>
 
 <script>
-let testDuration = 180000;  // 3分
+//let testDuration = 180000;  // 3分
+let testDuration = 3000;  // 30秒
 let testStartTime;
 
 let startTime;
 let waiting = false;
-let isRunning = false;   // ← テスト中かどうか
+let isRunning = false;
 
 let results = [];
 
@@ -51,25 +52,24 @@ const box = document.getElementById("box");
 const result = document.getElementById("result");
 const startBtn = document.getElementById("startBtn");
 
-// ✅ スタートボタン
+// スタート
 startBtn.addEventListener("click", () => {
-    results = [];             // リセット
+    results = [];
     isRunning = true;
-    testStartTime = Date.now(); // ← ここで初めて時間開始
-    startBtn.disabled = true; // ボタン無効化
+    testStartTime = Date.now();
+    startBtn.disabled = true;
     startTest();
 });
 
 function startTest(){
-
     box.style.background = "gray";
     box.textContent = "待機中...";
     waiting = true;
 
-    let delay = Math.random() * 8000 + 2000; // 2〜10秒
+    let delay = Math.random() * 8000 + 2000;
 
     setTimeout(() => {
-        if (!isRunning) return;  // 終了後の誤動作防止
+        if (!isRunning) return;
 
         box.style.background = "red";
         box.textContent = "クリック！";
@@ -80,38 +80,21 @@ function startTest(){
 
 box.addEventListener("click", () => {
 
-    if (!isRunning) return; // ← 未開始時は無視
+    if (!isRunning) return;
 
     if (waiting) {
-        result.textContent = "早すぎ！（フライング）";
-        return;
+        return; // フライング無視
     } else {
         let endTime = Date.now();
         let reaction = endTime - startTime;
 
         results.push(reaction);
 
-        let avg = results.reduce((a, b) => a + b) / results.length;
+        // 表示は何もしない（完全非表示）
 
-        // 残り時間
-        let remaining = Math.ceil((testDuration - (Date.now() - testStartTime)) / 1000);
-
-        result.textContent =
-          "反応: " + reaction +
-          " ms / 平均: " + avg.toFixed(1) +
-          " ms / 残り: " + remaining + "秒";
-
-        // ✅ 3分終了
         if (Date.now() - testStartTime >= testDuration) {
 
-            let lapseCount = results.filter(t => t > 500).length;
-
-            alert(
-              "テスト終了\n" +
-              "試行数: " + results.length + "\n" +
-              "平均: " + avg.toFixed(1) + " ms\n" +
-              "ラプス: " + lapseCount + "回"
-            );
+            alert("テスト終了");
 
             downloadCSV();
 
@@ -125,7 +108,18 @@ box.addEventListener("click", () => {
     }
 });
 
+// 日付＋時間のファイル名
 function downloadCSV() {
+
+    let now = new Date();
+
+    let fileName =
+        now.getFullYear() +
+        (now.getMonth()+1).toString().padStart(2,"0") +
+        now.getDate().toString().padStart(2,"0") + "_" +
+        now.getHours().toString().padStart(2,"0") +
+        now.getMinutes().toString().padStart(2,"0");
+
     let csv = "trial,reaction_time_ms\n";
 
     results.forEach((time, index) => {
@@ -136,7 +130,7 @@ function downloadCSV() {
 
     let link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = "pvt_result.csv";
+    link.download = "pvt_" + fileName + ".csv";
 
     link.click();
 }

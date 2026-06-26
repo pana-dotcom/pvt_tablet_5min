@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>PVT 反応時間テスト</title>
+
 <style>
 body {
     text-align: center;
@@ -21,25 +22,21 @@ body {
     user-select: none;
     -webkit-tap-highlight-color: transparent;
 }
-
 #box.waiting {
     font-size: 80px;
 }
-
 button{
     margin-top:20px;
     font-size:18px;
     padding:10px 20px;
 }
-
-
 .instruction {
     font-size: 40px;
     font-weight: bold;
 }
-
 </style>
 </head>
+
 <body>
 
 <p class="instruction">赤になったらすぐタップ！</p>
@@ -49,20 +46,22 @@ button{
 <div id="box" class="waiting">✖</div>
 
 <script>
-let testDuration = 270000; //4分半
+let testDuration = 270000; // 4分30秒
 let testStartTime;
 
 let startTime;
 let waiting = false;
 let isRunning = false;
 
-let timeoutId = null;
 let results = [];
+
+// ✅ 強制終了タイマー
+let forceEndTimer;
 
 const box = document.getElementById("box");
 const startBtn = document.getElementById("startBtn");
 
-// スタート
+// ✅ スタート
 startBtn.addEventListener("click", () => {
     results = [];
     isRunning = true;
@@ -74,35 +73,42 @@ startBtn.addEventListener("click", () => {
         document.documentElement.requestFullscreen();
     }
 
+    // ✅ 強制終了（ここが追加の核心）
+    forceEndTimer = setTimeout(() => {
+        if (isRunning) {
+            endTest();
+        }
+    }, testDuration);
+
     startTest();
 });
 
 function startTest(){
+    if (!isRunning) return;
+
     box.style.background = "gray";
     box.classList.add("waiting");
     box.textContent = "✖";
     waiting = true;
 
-    // ✅ 2〜10秒ランダム
     let delay = Math.random() * 8000 + 2000;
 
     setTimeout(() => {
         if (!isRunning) return;
 
-        // ✅ 描画と計測を同期
         requestAnimationFrame(() => {
+            if (!isRunning) return;
+
             box.style.background = "red";
             box.classList.remove("waiting");
             box.textContent = "タップ！";
             startTime = performance.now();
             waiting = false;
         });
-
-
     }, delay);
 }
 
-// ✅ 共通処理（タップ＆クリック）
+// ✅ 共通処理
 function handleResponse() {
     if (!isRunning) return;
 
@@ -115,25 +121,29 @@ function handleResponse() {
 
     results.push(reaction);
 
-    if (Date.now() - testStartTime >= testDuration) {
-        endTest();
-        return;
-    }
-
     startTest();
 }
 
-// ✅ スマホ高速入力
+// ✅ タップ処理
 box.addEventListener("touchstart", handleResponse);
 box.addEventListener("click", handleResponse);
 
-// ✅ テスト終了
+// ✅ 終了
 function endTest() {
+    if (!isRunning) return;
+
     isRunning = false;
+
+    // ✅ タイマー解除
+    clearTimeout(forceEndTimer);
+
     startBtn.disabled = false;
+
+    box.style.background = "black";
+    box.textContent = "終了";
+
     downloadCSV();
 }
-
 
 // ✅ CSV出力
 function downloadCSV() {
@@ -146,17 +156,10 @@ function downloadCSV() {
         now.getHours().toString().padStart(2,"0") +
         now.getMinutes().toString().padStart(2,"0");
 
-    // ✅ 3列
     let csv = "trial,reaction_time_ms,lapse\n";
 
     results.forEach((time, index) => {
-        let lapse = 0;
-
-        // ✅ 500ms以上ならラプス
-        if (time >= 500) {
-            lapse = 1;
-        }
-
+        let lapse = (time >= 500) ? 1 : 0;
         csv += (index + 1) + "," + time + "," + lapse + "\n";
     });
 

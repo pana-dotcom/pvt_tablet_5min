@@ -68,12 +68,9 @@ startBtn.addEventListener("click", () => {
     testStartTime = Date.now();
     startBtn.disabled = true;
 
-    // フルスクリーン（任意）
-    if (document.documentElement.requestFullscreen) {
-        document.documentElement.requestFullscreen();
-    }
+    // ✅ フルスクリーンは削除済み
 
-    // ✅ 強制終了（ここが追加の核心）
+    // ✅ 強制終了
     forceEndTimer = setTimeout(() => {
         if (isRunning) {
             endTest();
